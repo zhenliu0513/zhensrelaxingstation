@@ -118,3 +118,6 @@ def export_csv():
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=5000)
+@app.route("/stats")
+def stats():
+    return "<h2>统计图表功能即将上线</h2>"
