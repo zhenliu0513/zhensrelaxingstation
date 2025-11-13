@@ -11,7 +11,16 @@ from sheets import maybe_append_to_sheet
 from dateutil.parser import parse as dateparse
 
 main_bp = Blueprint('main', __name__)
-
+# 删除记录
+@main_bp.route('/record/<int:rid>/delete', methods=['POST'])
+@login_required
+def delete_record(rid):
+    rec = Record.query.get_or_404(rid)
+    db.session.delete(rec)
+    db.session.commit()
+    flash("记录已删除", "info")
+    # 删除后返回历史记录或者当天记录页面
+    return redirect(request.referrer or url_for('main.history'))
 SERVICE_TYPES = ["Full Body", "Foot", "Combination", "Chair"]
 DURATIONS = ["20min", "30min", "40min", "60min"]
 
