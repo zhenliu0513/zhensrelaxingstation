@@ -76,3 +76,19 @@
 </table>
 {% endif %}
 {% endblock %}
+{% if record %}
+<h5>最近保存（当天）</h5>
+<form method="post" action="{{ url_for('main.delete_record', rid=record.id) }}" onsubmit="return confirm('确定要删除该记录吗？');">
+  <table class="table table-sm">
+    <thead><tr><!-- 其它表头 --><th>操作</th></tr></thead>
+    <tbody>
+      <tr>
+        <!-- 其它数据列 -->
+        <td>
+          <button class="btn btn-danger btn-sm">删除</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</form>
+{% endif %}
