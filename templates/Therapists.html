@@ -10,8 +10,12 @@
       <td>{{ t.name }}</td>
       <td>{{ t.status }}</td>
       <td>{{ "%.2f"|format(t.commission_rate) }}</td>
-      <td><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.therapist_edit', tid=t.id) }}">编辑</a></td>
+      <td>
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.therapist_edit', tid=t.id) }}">编辑</a>
+      </td>
     </tr>
+    {% else %}
+    <tr><td colspan="4" class="text-center">暂无技师</td></tr>
     {% endfor %}
   </tbody>
 </table>
