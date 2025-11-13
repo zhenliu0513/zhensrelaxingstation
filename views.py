@@ -11,16 +11,7 @@ from sheets import maybe_append_to_sheet
 from dateutil.parser import parse as dateparse
 
 main_bp = Blueprint('main', __name__)
-# 删除记录
-@main_bp.route('/record/<int:rid>/delete', methods=['POST'])
-@login_required
-def delete_record(rid):
-    rec = Record.query.get_or_404(rid)
-    db.session.delete(rec)
-    db.session.commit()
-    flash("记录已删除", "info")
-    # 删除后返回历史记录或者当天记录页面
-    return redirect(request.referrer or url_for('main.history'))
+
 SERVICE_TYPES = ["Full Body", "Foot", "Combination", "Chair"]
 DURATIONS = ["20min", "30min", "40min", "60min"]
 
@@ -43,7 +34,6 @@ def index():
         d = parse_date(q_date, date.today())
     else:
         d = date.today()
-    # show an empty form or last record for that date
     rec = Record.query.filter_by(date=d).first()
     therapists = Therapist.query.filter_by(status='active').all()
     return render_template('index.html', record=rec, date=d, service_types=SERVICE_TYPES, durations=DURATIONS, therapists=therapists)
@@ -51,7 +41,6 @@ def index():
 @main_bp.route('/', methods=['POST'])
 @login_required
 def save_record():
-    # form data
     form_date = request.form.get('date') or date.today().isoformat()
     d = parse_date(form_date, date.today())
     try:
@@ -66,10 +55,8 @@ def save_record():
     duration = request.form.get('duration') or DURATIONS[0]
     therapist_id = request.form.get('therapist_id') or None
     if therapist_id == '': therapist_id = None
-
     total = round(card_amount + cash_amount, 2)
 
-    # create a new record (each save creates a record row)
     rec = Record(
         date=d,
         card_amount=card_amount,
@@ -84,11 +71,9 @@ def save_record():
     db.session.add(rec)
     db.session.commit()
 
-    # optional Google Sheets backup
     try:
         maybe_append_to_sheet(rec)
     except Exception as e:
-        # do not block saving, log to console (server logs)
         print("Google Sheets backup failed:", e)
 
     flash("记录已保存", "success")
@@ -97,7 +82,6 @@ def save_record():
 @main_bp.route('/history')
 @login_required
 def history():
-    # filtering
     start = request.args.get('start')
     end = request.args.get('end')
     service = request.args.get('service')
@@ -118,7 +102,6 @@ def history():
     if service:
         q = q.filter(Record.service_type == service)
     if therapist:
-        # allow name search
         q = q.join(Therapist).filter(Therapist.name.ilike(f"%{therapist}%"))
 
     q = q.order_by(Record.date.desc() if order == 'desc' else Record.date.asc())
@@ -129,7 +112,6 @@ def history():
 @main_bp.route('/export')
 @login_required
 def export_csv():
-    # export current filtered set or all
     start = request.args.get('start')
     end = request.args.get('end')
     q = Record.query
@@ -149,7 +131,11 @@ def export_csv():
     cw.writerow(["日期","服务项目","时长","技师","刷卡金额","现金金额","总金额","客人数","备注","创建时间"])
     for r in records:
         therapist_name = r.therapist.name if r.therapist else ""
-        cw.writerow([r.date.isoformat(), r.service_type, r.duration, therapist_name, f"{r.card_amount:.2f}", f"{r.cash_amount:.2f}", f"{r.total_amount:.2f}", r.customer_count, r.note or "", r.created_at.isoformat()])
+        cw.writerow([
+            r.date.isoformat(), r.service_type, r.duration, therapist_name,
+            f"{r.card_amount:.2f}", f"{r.cash_amount:.2f}", f"{r.total_amount:.2f}",
+            r.customer_count, r.note or "", r.created_at.isoformat()
+        ])
     output = si.getvalue()
     si.close()
     filename = f"records_{date.today().isoformat()}.csv"
@@ -171,7 +157,11 @@ def therapist_new():
         if not name:
             flash("请输入技师姓名", "danger")
             return redirect(url_for('main.therapist_new'))
-        t = Therapist(name=name, status=request.form.get('status','active'), commission_rate=float(request.form.get('commission_rate') or 0.0))
+        t = Therapist(
+            name=name,
+            status=request.form.get('status','active'),
+            commission_rate=float(request.form.get('commission_rate') or 0.0)
+        )
         db.session.add(t)
         db.session.commit()
         flash("技师已新增", "success")
@@ -210,7 +200,6 @@ def stats():
             start_date = parse_date(start)
             end_date = parse_date(end)
         else:
-            # last 30 days
             end_date = date.today()
             start_date = end_date - timedelta(days=29)
     else:
@@ -227,7 +216,6 @@ def stats():
     avg_daily_income = round(total_amount / days_span, 2)
     avg_daily_customers = round(total_customers / days_span, 2)
 
-    # per therapist summary (simple)
     therapist_summaries = {}
     for r in records:
         key = r.therapist.name if r.therapist else "未指定"
@@ -235,7 +223,6 @@ def stats():
         ts["count"] += 1
         ts["revenue"] += r.total_amount
 
-    # per service summary
     service_summary = {}
     for r in records:
         key = r.service_type or "其他"
@@ -262,7 +249,6 @@ def stats():
 @main_bp.route('/chart/income')
 @login_required
 def chart_income():
-    # params
     start = request.args.get('start')
     end = request.args.get('end')
     if start and end:
@@ -271,7 +257,6 @@ def chart_income():
     else:
         end_date = date.today()
         start_date = end_date - timedelta(days=29)
-    # aggregate daily totals
     days = (end_date - start_date).days + 1
     labels = []
     data = []
@@ -313,6 +298,7 @@ def chart_therapist():
     labels = [r[0] for r in q]
     data = [round(r[1] or 0.0,2) for r in q]
     return jsonify({"labels": labels, "data": data})
+
 @main_bp.route('/record/<int:rid>/delete', methods=['POST'])
 @login_required
 def delete_record(rid):
@@ -320,4 +306,4 @@ def delete_record(rid):
     db.session.delete(rec)
     db.session.commit()
     flash("记录已删除", "info")
-    return redirect(url_for('main.index'))
+    return redirect(request.referrer or url_for('main.history'))
