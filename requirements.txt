@@ -1,2 +1,11 @@
-Flask>=2.0
-gunicorn>=20.0
+Flask>=2.2
+Flask-Login>=0.6
+Flask-Migrate>=4.0
+SQLAlchemy>=1.4
+psycopg2-binary>=2.9  # if you use PostgreSQL
+python-dotenv>=0.21
+bcrypt>=4.0
+gunicorn>=20.1
+gspread>=5.7       # optional for Google Sheets
+google-auth>=2.20  # optional
+python-dateutil>=2.8
