@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block content %}
+<h4>技师管理</h4>
+<a class="btn btn-primary mb-3" href="{{ url_for('main.therapist_new') }}">新增技师</a>
+<table class="table table-sm">
+  <thead><tr><th>姓名</th><th>状态</th><th>提成</th><th>操作</th></tr></thead>
+  <tbody>
+    {% for t in therapists %}
+    <tr>
+      <td>{{ t.name }}</td>
+      <td>{{ t.status }}</td>
+      <td>{{ "%.2f"|format(t.commission_rate) }}</td>
+      <td><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.therapist_edit', tid=t.id) }}">编辑</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
