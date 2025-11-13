@@ -31,7 +31,6 @@
       {% endfor %}
     </select>
   </div>
-
   <div class="col-md-3">
     <label class="form-label">刷卡金额 (USD)</label>
     <input type="number" step="0.01" name="card_amount" class="form-control" value="{{ record.card_amount if record else '0.00' }}">
@@ -48,7 +47,6 @@
     <label class="form-label">备注</label>
     <input type="text" name="note" class="form-control" value="{{ record.note if record else '' }}">
   </div>
-
   <div class="col-12">
     <button class="btn btn-primary">保存今天记录</button>
     <button type="reset" class="btn btn-secondary">清空输入</button>
@@ -60,7 +58,19 @@
 {% if record %}
 <h5>最近保存（当天）</h5>
 <table class="table table-sm">
-  <thead><tr><th>服务</th><th>时长</th><th>技师</th><th>刷卡</th><th>现金</th><th>总额</th><th>客数</th><th>备注</th></tr></thead>
+  <thead>
+    <tr>
+      <th>服务</th>
+      <th>时长</th>
+      <th>技师</th>
+      <th>刷卡</th>
+      <th>现金</th>
+      <th>总额</th>
+      <th>客数</th>
+      <th>备注</th>
+      <th>操作</th>
+    </tr>
+  </thead>
   <tbody>
     <tr>
       <td>{{ record.service_type }}</td>
@@ -71,24 +81,14 @@
       <td>${{ "%.2f"|format(record.total_amount) }}</td>
       <td>{{ record.customer_count }}</td>
       <td>{{ record.note }}</td>
+      <td>
+        <form method="post" action="{{ url_for('main.delete_record', rid=record.id) }}"
+              style="display:inline;" onsubmit="return confirm('确定要删除该记录吗？');">
+          <button class="btn btn-danger btn-sm">删除</button>
+        </form>
+      </td>
     </tr>
   </tbody>
 </table>
 {% endif %}
 {% endblock %}
-{% if record %}
-<h5>最近保存（当天）</h5>
-<form method="post" action="{{ url_for('main.delete_record', rid=record.id) }}" onsubmit="return confirm('确定要删除该记录吗？');">
-  <table class="table table-sm">
-    <thead><tr><!-- 其它表头 --><th>操作</th></tr></thead>
-    <tbody>
-      <tr>
-        <!-- 其它数据列 -->
-        <td>
-          <button class="btn btn-danger btn-sm">删除</button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</form>
-{% endif %}
