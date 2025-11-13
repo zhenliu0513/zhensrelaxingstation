@@ -304,3 +304,11 @@ def chart_therapist():
     labels = [r[0] for r in q]
     data = [round(r[1] or 0.0,2) for r in q]
     return jsonify({"labels": labels, "data": data})
+@main_bp.route('/record/<int:rid>/delete', methods=['POST'])
+@login_required
+def delete_record(rid):
+    rec = Record.query.get_or_404(rid)
+    db.session.delete(rec)
+    db.session.commit()
+    flash("记录已删除", "info")
+    return redirect(url_for('main.index'))
