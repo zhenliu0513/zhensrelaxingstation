@@ -34,7 +34,20 @@
 </form>
 
 <table class="table table-striped table-sm">
-  <thead><tr><th>日期</th><th>服务</th><th>时长</th><th>技师</th><th>刷卡</th><th>现金</th><th>总额</th><th>客数</th><th>备注</th></tr></thead>
+  <thead>
+    <tr>
+      <th>日期</th>
+      <th>服务</th>
+      <th>时长</th>
+      <th>技师</th>
+      <th>刷卡</th>
+      <th>现金</th>
+      <th>总额</th>
+      <th>客数</th>
+      <th>备注</th>
+      <th>操作</th>
+    </tr>
+  </thead>
   <tbody>
     {% for r in records %}
     <tr>
@@ -47,9 +60,15 @@
       <td>${{ "%.2f"|format(r.total_amount) }}</td>
       <td>{{ r.customer_count }}</td>
       <td>{{ r.note }}</td>
+      <td>
+        <form method="post" action="{{ url_for('main.delete_record', rid=r.id) }}"
+              style="display:inline;" onsubmit="return confirm('确认删除该记录吗？');">
+          <button class="btn btn-danger btn-sm">删除</button>
+        </form>
+      </td>
     </tr>
     {% else %}
-    <tr><td colspan="9" class="text-center">暂无记录</td></tr>
+    <tr><td colspan="10" class="text-center">暂无记录</td></tr>
     {% endfor %}
   </tbody>
 </table>
