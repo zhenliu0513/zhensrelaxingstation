@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block content %}
+<h4>{% if therapist %}编辑技师{% else %}新增技师{% endif %}</h4>
+<form method="post" class="row g-3">
+  <div class="col-md-6">
+    <label class="form-label">姓名</label>
+    <input class="form-control" name="name" value="{{ therapist.name if therapist else '' }}" required>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">状态</label>
+    <select class="form-select" name="status">
+      <option value="active" {% if therapist and therapist.status=='active' %}selected{% endif %}>在职</option>
+      <option value="inactive" {% if therapist and therapist.status=='inactive' %}selected{% endif %}>停用</option>
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">提成比例（示例）</label>
+    <input class="form-control" name="commission_rate" value="{{ therapist.commission_rate if therapist else '0.0' }}">
+  </div>
+  <div class="col-12">
+    <button class="btn btn-primary">保存</button>
+    <a class="btn btn-secondary" href="{{ url_for('main.therapists') }}">取消</a>
+  </div>
+</form>
+{% endblock %}
