@@ -1,1 +1,11 @@
-
+body {
+  padding-bottom: 60px;
+}
+table td, table th {
+  vertical-align: middle;
+}
+@media (max-width: 576px) {
+  .navbar-brand { font-size: 1rem; }
+  .card-title { font-size: 1.1rem; }
+  .btn { font-size: 0.95rem; padding: 0.5rem 0.75rem; }
+}
