@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+{% block content %}
+<h3>统计汇总</h3>
+
+<form method="post" class="row g-2 mb-3">
+  <div class="col-md-3">
+    <label class="form-label">选择区间</label>
+    <select class="form-select" name="range_type" id="range_type" onchange="toggleCustom(this.value)">
+      <option value="this_month">本月（默认）</option>
+      <option value="this_week">本周</option>
+      <option value="custom">自定义区间</option>
+    </select>
+  </div>
+  <div class="col-md-3" id="custom_start" style="display:none;">
+    <label class="form-label">开始日期</label>
+    <input class="form-control" type="date" name="start">
+  </div>
+  <div class="col-md-3" id="custom_end" style="display:none;">
+    <label class="form-label">结束日期</label>
+    <input class="form-control" type="date" name="end">
+  </div>
+  <div class="col-md-3 align-self-end">
+    <button class="btn btn-primary">查询</button>
+  </div>
+</form>
+
+<script>
+function toggleCustom(val){
+  if(val === 'custom'){
+    document.getElementById('custom_start').style.display = '';
+    document.getElementById('custom_end').style.display = '';
+  } else {
+    document.getElementById('custom_start').style.display = 'none';
+    document.getElementById('custom_end').style.display = 'none';
+  }
+}
+</script>
+
+<div class="mb-4">
+  <h5>区间：{{ summary.start_date }} 至 {{ summary.end_date }} （共 {{ summary.days_span }} 天）</h5>
+  <table class="table table-bordered table-sm w-auto">
+    <tr>
+      <th>总刷卡金额</th><td>${{ "%.2f"|format(summary.total_card) }}</td>
+      <th>总现金金额</th><td>${{ "%.2f"|format(summary.total_cash) }}</td>
+    </tr>
+    <tr>
+      <th>总金额</th><td>${{ "%.2f"|format(summary.total_amount) }}</td>
+      <th>总客人数</th><td>{{ summary.total_customers }}</td>
+    </tr>
+    <tr>
+      <th>平均每日收入</th><td>${{ "%.2f"|format(summary.avg_daily_income) }}</td>
+      <th>平均每日客人数</th><td>{{ "%.2f"|format(summary.avg_daily_customers) }}</td>
+    </tr>
+  </table>
+</div>
+
+<h5>明细（区间内每天记录）</h5>
+<table class="table table-sm">
+  <thead>
+    <tr>
+      <th>日期</th>
+      <th>刷卡</th>
+      <th>现金</th>
+      <th>总额</th>
+      <th>客人数</th>
+      <th>平均客单价</th>
+      <th>备注</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in records %}
+    <tr>
+      <td>{{ r.date }}</td>
+      <td>${{ "%.2f"|format(r.card_amount) }}</td>
+      <td>${{ "%.2f"|format(r.cash_amount) }}</td>
+      <td>${{ "%.2f"|format(r.total_amount) }}</td>
+      <td>{{ r.customer_count }}</td>
+      <td>
+        {% if r.customer_count and r.customer_count > 0 %}
+          ${{ "%.2f"|format(r.total_amount / r.customer_count) }}
+        {% else %}
+          N/A
+        {% endif %}
+      </td>
+      <td>{{ r.note }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" class="text-center">暂无记录</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
