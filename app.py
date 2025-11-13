@@ -1,123 +1,52 @@
-import sqlite3
-from flask import Flask, render_template, request, redirect, url_for
-from datetime import datetime
+"""
+App entry point and factory-like setup.
+"""
+import os
+from flask import Flask
+from dotenv import load_dotenv
+from flask_migrate import Migrate
+from flask_login import LoginManager
+from models import db, User
+from utils import create_default_admin
 
-app = Flask(__name__)
+load_dotenv()  # load .env in development
 
-DB_PATH = "data.db"
+def create_app():
+    app = Flask(__name__, static_folder="static", template_folder="templates")
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change_this_secret_key')
+    # Database URL
+    db_url = os.environ.get('DATABASE_URL', 'sqlite:///data.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# ------------------------------------------------------
-# 初始化数据库
-# ------------------------------------------------------
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute(
-        """
-        CREATE TABLE IF NOT EXISTS records (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT,
-            card REAL,
-            cash REAL,
-            total REAL,
-            customers INTEGER,
-            note TEXT
-        )
-        """
-    )
-    conn.commit()
-    conn.close()
+    # Initialize extensions
+    db.init_app(app)
+    migrate = Migrate(app, db)
 
+    # Login manager
+    login_manager = LoginManager()
+    login_manager.login_view = 'auth.login'
+    login_manager.init_app(app)
 
-# ------------------------------------------------------
-# 首页 - 当天记录
-# ------------------------------------------------------
-@app.route("/", methods=["GET", "POST"])
-def index():
-    if request.method == "POST":
-        date = request.form.get("date")
-        card = float(request.form.get("card") or 0)
-        cash = float(request.form.get("cash") or 0)
-        customers = int(request.form.get("customers") or 0)
-        note = request.form.get("note", "")
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
 
-        total = card + cash
+    # Blueprints / routes
+    from auth import auth_bp
+    from views import main_bp
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(main_bp)
 
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute(
-            """
-            INSERT INTO records (date, card, cash, total, customers, note)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """,
-            (date, card, cash, total, customers, note),
-        )
-        conn.commit()
-        conn.close()
+    # Create DB tables and default admin on first run
+    with app.app_context():
+        db.create_all()
+        create_default_admin()
 
-        return redirect(url_for("history"))
+    return app
 
-    today = datetime.now().strftime("%Y-%m-%d")
-    return render_template("index.html", today=today)
+app = create_app()
 
-
-# ------------------------------------------------------
-# 历史记录页面
-# ------------------------------------------------------
-@app.route("/history")
-def history():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute(
-        """
-        SELECT id, date, card, cash, total, customers, note
-        FROM records
-        ORDER BY date DESC, id DESC
-        """
-    )
-    rows = c.fetchall()
-    conn.close()
-    return render_template("history.html", rows=rows)
-
-
-# ------------------------------------------------------
-# 删除记录功能
-# ------------------------------------------------------
-@app.route("/delete/<int:record_id>", methods=["POST"])
-def delete_record(record_id):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("DELETE FROM records WHERE id = ?", (record_id,))
-    conn.commit()
-    conn.close()
-    return redirect(url_for("history"))
-
-
-# ------------------------------------------------------
-# 导出 CSV（保留原功能，如无则忽略）
-# ------------------------------------------------------
-@app.route("/export")
-def export_csv():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT * FROM records")
-    rows = c.fetchall()
-    conn.close()
-
-    csv = "id,date,card,cash,total,customers,note\n"
-    for r in rows:
-        line = ",".join([str(x) for x in r]) + "\n"
-        csv += line
-
-    return csv, 200, {"Content-Type": "text/csv"}
-
-
-# ------------------------------------------------------
-# 启动前初始化数据库
-# ------------------------------------------------------
 if __name__ == "__main__":
-    init_db()
-    app.run(host="0.0.0.0", port=5000)
-@app.route("/stats")
-def stats():
-    return "<h2>统计图表功能即将上线</h2>"
+    # dev server
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=(os.environ.get('FLASK_ENV') != 'production'))
